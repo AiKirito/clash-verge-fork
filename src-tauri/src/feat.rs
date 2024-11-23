@@ -21,7 +21,7 @@ use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 pub fn open_or_close_dashboard() {
     if let Some(window) = handle::Handle::global().get_window() {
         if let Ok(true) = window.is_focused() {
-            let _ = window.minimize();
+            let _ = window.hide();
             return;
         }
     }
@@ -118,12 +118,17 @@ pub fn toggle_tun_mode() {
 
 pub fn quit(code: Option<i32>) {
     let app_handle = handle::Handle::global().app_handle().unwrap();
+    handle::Handle::global().set_is_exiting();
     resolve::resolve_reset();
-    #[cfg(target_os = "macos")]
-    tauri::async_runtime::block_on(async {
-        resolve::restore_public_dns().await;
-    });
-
+    log_err!(handle::Handle::global().get_window().unwrap().close());
+    match app_handle.save_window_state(StateFlags::all()) {
+        Ok(_) => {
+            log::info!(target: "app", "window state saved successfully");
+        }
+        Err(e) => {
+            log::error!(target: "app", "failed to save window state: {}", e);
+        }
+    };
     app_handle.exit(code.unwrap_or(0));
 }
 

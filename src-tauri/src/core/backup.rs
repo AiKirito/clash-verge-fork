@@ -45,6 +45,7 @@ impl WebDavClient {
                 .set_agent(
                     reqwest::Client::builder()
                         .danger_accept_invalid_certs(true)
+                        .timeout(std::time::Duration::from_secs(3))
                         .build()
                         .unwrap(),
                 )
@@ -94,8 +95,9 @@ impl WebDavClient {
 
     pub async fn list(&self) -> Result<Vec<ListFile>, Error> {
         let client = self.get_client().await?;
+        let path = format!("{}/", dirs::BACKUP_DIR);
         let files = client
-            .list(dirs::BACKUP_DIR, reqwest_dav::Depth::Number(1))
+            .list(path.as_str(), reqwest_dav::Depth::Number(1))
             .await?;
         let mut final_files = Vec::new();
         for file in files {

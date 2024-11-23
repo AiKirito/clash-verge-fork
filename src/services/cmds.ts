@@ -6,29 +6,6 @@ export async function copyClashEnv() {
   return invoke<void>("copy_clash_env");
 }
 
-export async function getClashLogs() {
-  const regex = /time="(.+?)"\s+level=(.+?)\s+msg="(.+?)"/;
-  const newRegex = /(.+?)\s+(.+?)\s+(.+)/;
-  const logs = await invoke<string[]>("get_clash_logs");
-
-  return logs.reduce<ILogItem[]>((acc, log) => {
-    const result = log.match(regex);
-    if (result) {
-      const [_, _time, type, payload] = result;
-      const time = dayjs(_time).format("MM-DD HH:mm:ss");
-      acc.push({ time, type, payload });
-      return acc;
-    }
-
-    const result2 = log.match(newRegex);
-    if (result2) {
-      const [_, time, type, payload] = result2;
-      acc.push({ time, type, payload });
-    }
-    return acc;
-  }, []);
-}
-
 export async function getProfiles() {
   return invoke<IProfilesConfig>("get_profiles");
 }
@@ -43,7 +20,7 @@ export async function patchProfilesConfig(profiles: IProfilesConfig) {
 
 export async function createProfile(
   item: Partial<IProfileItem>,
-  fileData?: string | null
+  fileData?: string | null,
 ) {
   return invoke<void>("create_profile", { item, fileData });
 }
@@ -84,7 +61,7 @@ export async function deleteProfile(index: string) {
 
 export async function patchProfile(
   index: string,
-  profile: Partial<IProfileItem>
+  profile: Partial<IProfileItem>,
 ) {
   return invoke<void>("patch_profile", { index, profile });
 }
@@ -155,19 +132,19 @@ export async function getAppDir() {
 
 export async function openAppDir() {
   return invoke<void>("open_app_dir").catch((err) =>
-    Notice.error(err?.message || err.toString(), 1500)
+    Notice.error(err?.message || err.toString(), 1500),
   );
 }
 
 export async function openCoreDir() {
   return invoke<void>("open_core_dir").catch((err) =>
-    Notice.error(err?.message || err.toString(), 1500)
+    Notice.error(err?.message || err.toString(), 1500),
   );
 }
 
 export async function openLogsDir() {
   return invoke<void>("open_logs_dir").catch((err) =>
-    Notice.error(err?.message || err.toString(), 1500)
+    Notice.error(err?.message || err.toString(), 1500),
   );
 }
 
@@ -178,7 +155,7 @@ export async function openWebUrl(url: string) {
 export async function cmdGetProxyDelay(
   name: string,
   timeout: number,
-  url?: string
+  url?: string,
 ) {
   name = encodeURIComponent(name);
   return invoke<{ delay: number }>("clash_api_get_proxy_delay", {
@@ -192,21 +169,9 @@ export async function cmdTestDelay(url: string) {
   return invoke<number>("test_delay", { url });
 }
 
-/// service mode
-
-export async function checkService() {
-  try {
-    const result = await invoke<any>("check_service");
-    if (result?.code === 0) return "active";
-    if (result?.code === 400) return "installed";
-    return "unknown";
-  } catch (err: any) {
-    return "uninstall";
-  }
-}
 export async function invoke_uwp_tool() {
   return invoke<void>("invoke_uwp_tool").catch((err) =>
-    Notice.error(err?.message || err.toString(), 1500)
+    Notice.error(err?.message || err.toString(), 1500),
   );
 }
 
@@ -224,7 +189,7 @@ export async function exitApp() {
 
 export async function copyIconFile(
   path: string,
-  name: "common" | "sysproxy" | "tun"
+  name: "common" | "sysproxy" | "tun",
 ) {
   return invoke<void>("copy_icon_file", { path, name });
 }
@@ -256,7 +221,7 @@ export async function restoreWebDavBackup(filename: string) {
 export async function saveWebdavConfig(
   url: string,
   username: string,
-  password: String
+  password: String,
 ) {
   return invoke<void>("save_webdav_config", {
     url,

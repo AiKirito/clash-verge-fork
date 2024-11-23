@@ -52,7 +52,7 @@ pub async fn get_proxy_delay(
     let (url, headers) = clash_client_info()?;
     let url = format!("{url}/proxies/{name}/delay");
 
-    let default_url = "http://1.1.1.1";
+    let default_url = "http://cp.cloudflare.com/generate_204";
     let test_url = test_url
         .map(|s| if s.is_empty() { default_url.into() } else { s })
         .unwrap_or(default_url.into());
@@ -96,8 +96,7 @@ pub fn parse_log(log: String) -> String {
     log
 }
 
-/// 缩短clash -t的错误输出
-/// 仅适配 clash p核 8-26、clash meta 1.13.1
+#[allow(dead_code)]
 pub fn parse_check_output(log: String) -> String {
     let t = log.find("time=");
     let m = log.find("msg=");

@@ -32,11 +32,14 @@ pub async fn use_tun(mut config: Mapping, enable: bool) -> Mapping {
 
     if enable {
         revise!(dns_val, "enable", true);
-        revise!(dns_val, "ip-v6", true);
+        revise!(dns_val, "ipv6", true);
         revise!(dns_val, "enhanced-mode", "fake-ip");
         revise!(dns_val, "fake-ip-range", "10.96.0.0/16");
         #[cfg(target_os = "macos")]
-        crate::utils::resolve::set_public_dns("10.96.0.2".to_string()).await;
+        {
+            crate::utils::resolve::restore_public_dns().await;
+            crate::utils::resolve::set_public_dns("10.96.0.2".to_string()).await;
+        }
     } else {
         revise!(dns_val, "enhanced-mode", "redir-host");
         #[cfg(target_os = "macos")]

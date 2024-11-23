@@ -100,7 +100,6 @@ pub async fn resolve_setup(app: &mut App) {
         create_window();
     }
 
-    log_err!(sysopt::Sysopt::global().init_launch());
     log_err!(sysopt::Sysopt::global().update_sysproxy().await);
     log_err!(sysopt::Sysopt::global().init_guard_sysproxy());
 
@@ -114,6 +113,8 @@ pub fn resolve_reset() {
     tauri::async_runtime::block_on(async move {
         log_err!(sysopt::Sysopt::global().reset_sysproxy().await);
         log_err!(CoreManager::global().stop_core().await);
+        #[cfg(target_os = "macos")]
+        restore_public_dns().await;
     });
 }
 
@@ -140,9 +141,9 @@ pub fn create_window() {
     #[cfg(target_os = "windows")]
     let window = builder
         .decorations(false)
+        .maximizable(true)
         .additional_browser_args("--enable-features=msWebView2EnableDraggableRegions --disable-features=OverscrollHistoryNavigation,msExperimentalScrolling")
         .transparent(true)
-        .inner_size(800.0, 636.0)
         .visible(false)
         .build().unwrap();
 
@@ -151,7 +152,6 @@ pub fn create_window() {
         .decorations(true)
         .hidden_title(true)
         .title_bar_style(tauri::TitleBarStyle::Overlay)
-        .inner_size(800.0, 642.0)
         .build()
         .unwrap();
 
@@ -159,11 +159,32 @@ pub fn create_window() {
     let window = builder
         .decorations(false)
         .transparent(true)
-        .inner_size(800.0, 642.0)
         .build()
         .unwrap();
 
-    let _ = window.restore_state(StateFlags::all());
+    match window.restore_state(StateFlags::all()) {
+        Ok(_) => {
+            log::info!(target: "app", "window state restored successfully");
+        }
+        Err(e) => {
+            log::error!(target: "app", "failed to restore window state: {}", e);
+            #[cfg(target_os = "windows")]
+            window
+                .set_size(tauri::Size::Physical(tauri::PhysicalSize {
+                    width: 800,
+                    height: 636,
+                }))
+                .unwrap();
+
+            #[cfg(not(target_os = "windows"))]
+            window
+                .set_size(tauri::Size::Physical(tauri::PhysicalSize {
+                    width: 800,
+                    height: 642,
+                }))
+                .unwrap();
+        }
+    };
 }
 
 pub async fn resolve_scheme(param: String) -> Result<()> {

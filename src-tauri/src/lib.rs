@@ -4,12 +4,11 @@ mod core;
 mod enhance;
 mod feat;
 mod utils;
-
 use crate::core::hotkey;
 use crate::utils::{resolve, resolve::resolve_scheme, server};
 #[cfg(target_os = "macos")]
 use tauri::Listener;
-use tauri_plugin_window_state::{AppHandleExt, StateFlags};
+use tauri_plugin_autostart::MacosLauncher;
 
 pub fn run() {
     // 单例检测
@@ -33,6 +32,10 @@ pub fn run() {
 
     #[allow(unused_mut)]
     let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -48,7 +51,7 @@ pub fn run() {
             #[cfg(target_os = "linux")]
             {
                 use tauri_plugin_deep_link::DeepLinkExt;
-                app.deep_link().register_all()?;
+                log_err!(app.deep_link().register_all());
             }
             #[cfg(target_os = "macos")]
             {
@@ -88,7 +91,6 @@ pub fn run() {
             cmds::restart_app,
             // clash
             cmds::get_clash_info,
-            cmds::get_clash_logs,
             cmds::patch_clash_config,
             cmds::change_clash_core,
             cmds::get_runtime_config,
@@ -121,8 +123,6 @@ pub fn run() {
             cmds::delete_profile,
             cmds::read_profile_file,
             cmds::save_profile_file,
-            // service mode
-            cmds::service::check_service,
             // clash api
             cmds::clash_api_get_proxy_delay,
             // backup
@@ -148,13 +148,14 @@ pub fn run() {
                 api.prevent_exit();
                 return;
             }
-            let app_hanele = core::handle::Handle::global().app_handle().unwrap();
-            let _ = app_hanele.save_window_state(StateFlags::default());
         }
         tauri::RunEvent::WindowEvent { label, event, .. } => {
             if label == "main" {
                 match event {
                     tauri::WindowEvent::CloseRequested { api, .. } => {
+                        if core::handle::Handle::global().is_exiting() {
+                            return;
+                        }
                         println!("closing window...");
                         api.prevent_close();
                         let window = core::handle::Handle::global().get_window().unwrap();

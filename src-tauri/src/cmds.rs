@@ -8,7 +8,7 @@ use crate::{ret_err, wrap_err};
 use anyhow::{Context, Result};
 use network_interface::NetworkInterface;
 use serde_yaml::Mapping;
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use sysproxy::{Autoproxy, Sysproxy};
 type CmdResult<T = ()> = Result<T, String>;
 use reqwest_dav::list_cmd::ListFile;
@@ -169,8 +169,10 @@ pub async fn patch_clash_config(payload: Mapping) -> CmdResult {
 }
 
 #[tauri::command]
-pub fn get_verge_config() -> CmdResult<IVerge> {
-    Ok(Config::verge().data().clone())
+pub fn get_verge_config() -> CmdResult<IVergeResponse> {
+    let verge = Config::verge();
+    let verge_data = verge.data().clone();
+    Ok(IVergeResponse::from(verge_data))
 }
 
 #[tauri::command]
@@ -214,11 +216,6 @@ pub fn get_auto_proxy() -> CmdResult<Mapping> {
     map.insert("url".into(), current.url.into());
 
     Ok(map)
-}
-
-#[tauri::command]
-pub fn get_clash_logs() -> CmdResult<VecDeque<String>> {
-    Ok(logger::Logger::global().get_log())
 }
 
 #[tauri::command]
@@ -372,7 +369,7 @@ pub fn open_devtools(app_handle: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub async fn exit_app() {
+pub fn exit_app() {
     feat::quit(Some(0));
 }
 
@@ -418,16 +415,6 @@ pub async fn restore_webdav_backup(filename: String) -> CmdResult<()> {
 pub async fn restart_app() -> CmdResult<()> {
     feat::restart_app();
     Ok(())
-}
-
-pub mod service {
-    use super::*;
-    use crate::core::service;
-
-    #[tauri::command]
-    pub async fn check_service() -> CmdResult<service::JsonResponse> {
-        wrap_err!(service::check_service().await)
-    }
 }
 
 #[cfg(not(windows))]
